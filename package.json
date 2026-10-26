@@ -1,0 +1,7 @@
+{
+  "name": "presentation-coach-ui",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": { "test": "node test/smoke.js" },
+  "devDependencies": { "react": "18.3.1", "react-dom": "18.3.1" }
+}

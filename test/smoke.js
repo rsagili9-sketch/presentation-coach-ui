@@ -1,0 +1,13 @@
+global.window = global; window.React = require('react');
+const S = require('react-dom/server'); require('../src/index.js');
+const P = window.PresentationCoach, h = React.createElement, out = (e) => S.renderToStaticMarkup(e);
+const assert = require('assert');
+assert(out(h(P.SessionTimer, { elapsed: 440 })).includes('2:40 until the 10:00 target'));
+assert(out(h(P.SessionTimer, { elapsed: 665 })).includes('In target · 0:55 left'));
+assert(out(h(P.SessionTimer, { elapsed: 770 })).includes('0:50 over'));
+assert(out(h(P.Metric, { label: 'x', value: null })).includes('Unavailable'));
+assert(out(h(P.CriterionCard, { name: 'v', earned: null, max: 10, explanation: 'e' })).includes('Not assessable'));
+assert(out(h(P.CompareChart, { criteria: [{ name: 'a', a: 7, b: 6, max: 10 }, { name: 'b', a: null, b: 5, max: 10 }] })).includes('↓ −1'));
+assert(out(h(P.TakeRow, { name: 't', date: 'd', rubric: null, duration: '1:00', score: null, max: 100 })).includes('Provisional'));
+for (const k of Object.keys(P)) if (!['SessionTimer','Metric','CriterionCard','CompareChart','TakeRow'].includes(k)) out(h(P[k], { lead: 'l', value: {}, label: 'l', from: 1, to: 2, change: '1', better: true, children: 'c', criteria: [] }));
+console.log('ok');
