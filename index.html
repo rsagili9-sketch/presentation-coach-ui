@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Presentation Coach</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Source+Sans+3:wght@400;600&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+body { padding: 0; min-height: 100vh; }
+.app-head { border-bottom: 1px solid var(--hairline); }
+.app-head > div, main { max-width: 720px; margin: 0 auto; padding: 0 var(--space-4); box-sizing: border-box; }
+.app-head > div { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-6); padding-top: var(--space-3); padding-bottom: var(--space-3); }
+nav { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+nav button { font: 600 15px/20px var(--font-sans); background: none; border: 0; color: var(--ink-muted); padding: 8px 10px; cursor: pointer; border-bottom: 2px solid transparent; }
+nav button[aria-current="page"] { color: var(--ink); border-bottom-color: var(--coral); }
+nav button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+main { padding-top: var(--space-8); padding-bottom: var(--space-12); display: grid; gap: var(--space-6); }
+.recorder { aspect-ratio: 16 / 9; display: grid; place-items: center; background: var(--surface-200); border: 1px solid var(--hairline); border-radius: var(--radius-lg); color: var(--ink-muted); text-align: center; padding: var(--space-4); }
+.dot { color: var(--coral-text); }
+select.pc-input { width: auto; min-width: 180px; }
+ul.plain { margin: 4px 0 0; padding-left: 20px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="src/index.js"></script>
+<script>
+(function () {
+  var h = React.createElement, PC = window.PresentationCoach, useState = React.useState, useEffect = React.useEffect;
+  var MIN = 600, MAX = 720;
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  var short = function (s) { return Math.floor(s / 60) + ':' + pad(Math.round(s) % 60); };
+  var hash = function (s) { var x = 7; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) % 100003; return x; };
+
+  var RUBRIC0 = [
+    { id: 1, name: 'Opening hook', description: 'Grabs attention in the first 30 seconds and states why the problem matters.', maxPoints: 10 },
+    { id: 2, name: 'Structure', description: 'Clear problem, solution, evidence and ask, in a logical order.', maxPoints: 10 },
+    { id: 3, name: 'Evidence', description: 'Claims are backed by data, examples or sources.', maxPoints: 10 },
+    { id: 4, name: 'Use of visual aids', description: 'Slides support the talk instead of repeating it.', maxPoints: 10 },
+    { id: 5, name: 'Closing ask', description: 'Ends with a specific request or next step.', maxPoints: 10 }
+  ];
+  var QUOTES = ['Most teams only find out a launch failed after the customers do.', 'First the problem, then what we built, then what it costs.', 'In our pilot, 41 of 60 users came back within a week.', '', 'So what I am asking for today is two more weeks and one more engineer.'];
+
+  // Simulated scoring: the real app sends the transcript to an AI model. The total is still summed in code.
+  function evaluate(id, name, date, duration, rubric, rubricName) {
+    var inTarget = duration >= MIN && duration <= MAX;
+    var criteria = rubric.map(function (c, i) {
+      var max = Number(c.maxPoints) || 0;
+      if (/visual|slide/i.test(c.name)) return { name: c.name, earned: null, max: max };
+      var r = 0.5 + (inTarget ? 0.25 : 0.1) + (hash(id + c.name) % 20) / 100;
+      return { name: c.name, earned: Math.min(max, Math.round(max * r)), max: max, quote: QUOTES[i % QUOTES.length] ? { time: pad(Math.floor((i + 1) * duration / 6 / 60)) + ':' + pad(Math.floor((i + 1) * duration / 6) % 60), text: QUOTES[i % QUOTES.length] } : null };
+    });
+    return { id: id, name: name, date: date, duration: duration, rubricName: rubric.length ? rubricName : null, criteria: rubric.length ? criteria : null,
+      wpm: 130 + hash(id) % 45, fillers: Math.round((1.5 + (hash(id + 'f') % 25) / 10) * 10) / 10 };
+  }
+  var total = function (t) {
+    if (!t.criteria) return null;
+    var ok = t.criteria.filter(function (c) { return c.earned !== null; });
+    var max = ok.reduce(function (a, c) { return a + c.max; }, 0);
+    return max ? { earned: ok.reduce(function (a, c) { return a + c.earned; }, 0), max: max } : null;
+  };
+  var pct = function (tt) { return Math.round(100 * tt.earned / tt.max); };
+
+  var seed = function () {
+    var t1 = evaluate('take-1', 'Take 1', 'Oct 24, 6:40 pm', 520, RUBRIC0, 'Capstone pitch rubric'); t1.wpm = 171; t1.fillers = 3.8;
+    var t2 = evaluate('take-2', 'Take 2', 'Oct 26, 4:12 pm', 665, RUBRIC0, 'Capstone pitch rubric'); t2.wpm = 148; t2.fillers = 2.4;
+    return [t1, t2];
+  };
+
+  function Page(p) { return h('div', { style: { display: 'grid', gap: 24 } }, h('h1', { className: 'heading-1' }, p.title), p.children); }
+  var Demo = function () { return h(PC.Notice, { lead: 'Demo.' }, 'Scores, transcripts and feedback here are simulated in your browser. Nothing is recorded or uploaded.'); };
+
+  function RubricPage(p) {
+    var rows = p.rubric, totalPts = rows.reduce(function (a, c) { return a + (Number(c.maxPoints) || 0); }, 0);
+    var set = function (i, v) { var n = rows.slice(); n[i] = Object.assign({ id: rows[i].id }, v); p.setRubric(n); p.setSaved(false); };
+    return h(Page, { title: 'Rubric' }, h(Demo),
+      !rows.length && h(PC.Notice, { lead: 'Provisional.' }, 'With no rubric, feedback is general and labeled Provisional.'),
+      rows.map(function (c, i) { return h(PC.RubricRow, { key: c.id, value: c, onChange: function (v) { set(i, v); }, onRemove: function () { p.setRubric(rows.filter(function (_, j) { return j !== i; })); p.setSaved(false); } }); }),
+      h('div', { className: 'pc-row', style: { justifyContent: 'space-between' } },
+        h(PC.Button, { variant: 'secondary', onClick: function () { p.setRubric(rows.concat({ id: Date.now(), name: '', description: '', maxPoints: 10 })); p.setSaved(false); } }, 'Add a criterion'),
+        h('span', { className: 'pc-muted' }, rows.length + ' criteria · ' + totalPts + ' points in total')),
+      h('div', { className: 'pc-row' }, h(PC.Button, { onClick: function () { p.setSaved(true); } }, 'Save rubric'), p.saved && h('span', { className: 'pc-up' }, 'Saved. New takes use this rubric.')));
+  }
+
+  function PracticePage(p) {
+    var ph = useState('idle'), phase = ph[0], setPhase = ph[1];
+    var el = useState(0), elapsed = el[0], setElapsed = el[1];
+    var fs = useState(true), fast = fs[0], setFast = fs[1];
+    var qs = useState({}), qa = qs[0], setQa = qs[1];
+    var er = useState(''), err = er[0], setErr = er[1];
+    useEffect(function () {
+      if (phase !== 'recording') return;
+      var t = setInterval(function () { setElapsed(function (e) { return e + (fast ? 30 : 1); }); }, 1000);
+      return function () { clearInterval(t); };
+    }, [phase, fast]);
+    var done = phase === 'stopped';
+    var evalTake = function () {
+      if (elapsed < 30) { setErr('Record at least 30 seconds before evaluating.'); return; }
+      var n = p.takes.length + 1, id = 'take-' + Date.now();
+      var t = evaluate(id, 'Take ' + n, new Date().toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }), elapsed, p.rubric, 'Your rubric');
+      t.qa = qa;
+      p.addTake(t); p.go('results', id);
+    };
+    return h(Page, { title: 'Practice' }, h(Demo),
+      h('div', { className: 'recorder' }, h('div', null, phase === 'recording' && h('div', { className: 'dot' }, '● Recording'), h('div', null, 'The camera preview appears here in the real app.'))),
+      h(PC.SessionTimer, { elapsed: elapsed }),
+      done && elapsed < MIN && h(PC.Notice, { lead: 'Too short.' }, 'Your take is ' + short(elapsed) + ', under the 10 minute target.'),
+      done && elapsed > MAX && h(PC.Notice, { lead: 'Too long.' }, 'Your take is ' + short(elapsed) + ', ' + short(elapsed - MAX) + ' over the 12 minute limit.'),
+      err && h(PC.Notice, { lead: 'Not yet.' }, err),
+      h('div', { className: 'pc-row' },
+        phase === 'idle' && h(PC.Button, { onClick: function () { setPhase('recording'); } }, 'Start recording'),
+        phase === 'recording' && h(PC.Button, { onClick: function () { setPhase('stopped'); } }, 'Stop recording'),
+        phase === 'recording' && h(PC.Button, { variant: 'secondary', onClick: function () { setQa(Object.assign({}, qa, { start: elapsed })); } }, 'Mark Q&A start'),
+        phase === 'recording' && h(PC.Button, { variant: 'secondary', onClick: function () { setQa(Object.assign({}, qa, { end: elapsed })); } }, 'Mark Q&A end'),
+        done && h(PC.Button, { onClick: evalTake }, 'Evaluate this take'),
+        done && h(PC.Button, { variant: 'text', onClick: function () { setQa({ none: true }); } }, 'No Q&A'),
+        phase !== 'idle' && h(PC.Button, { variant: 'secondary', onClick: function () { setPhase('idle'); setElapsed(0); setQa({}); setErr(''); } }, 'Start over')),
+      h('div', { className: 'caption pc-muted' },
+        'Q&A: ' + (qa.none ? 'No Q&A' : qa.start == null ? 'not marked' : short(qa.start) + ' to ' + (qa.end == null ? '…' : short(qa.end)))),
+      h('label', { className: 'caption pc-muted' }, h('input', { type: 'checkbox', checked: fast, onChange: function (e) { setFast(e.target.checked); }, disabled: phase === 'recording' }), ' Demo speed: 30 seconds pass each second'));
+  }
+
+  function ResultsPage(p) {
+    var t = p.takes.filter(function (x) { return x.id === p.takeId; })[0] || p.takes[p.takes.length - 1];
+    if (!t) return h(Page, { title: 'Results' }, h('p', null, 'No takes yet. Record one on Practice.'));
+    var tt = total(t), rated = t.criteria ? t.criteria.filter(function (c) { return c.earned !== null; }).sort(function (a, b) { return b.earned / b.max - a.earned / a.max; }) : [];
+    return h(Page, { title: t.name + ' results' }, h(Demo),
+      !t.criteria && h(PC.Notice, { lead: 'Provisional.' }, 'No rubric was attached to this take, so there is no score.'),
+      h('div', { className: 'pc-card' }, h('div', { className: 'pc-label' }, 'Measured'),
+        h('div', { className: 'score' }, tt ? tt.earned + ' / ' + tt.max : 'Unavailable'),
+        tt && h('div', { className: 'pc-muted' }, pct(tt) + '% · computed by the app, not the AI'),
+        h('div', { className: 'pc-row', style: { gap: 32, marginTop: 16, alignItems: 'flex-start' } },
+          h(PC.Metric, { label: 'duration', value: short(t.duration) }), h(PC.Metric, { label: 'words per minute', value: t.wpm }),
+          h(PC.Metric, { label: 'fillers per minute', value: t.fillers }), h(PC.Metric, { label: 'longest pause', value: null }))),
+      t.duration < MIN && h(PC.Notice, { lead: 'Too short.' }, 'This take was ' + short(t.duration) + ', under the 10 minute target.'),
+      t.duration > MAX && h(PC.Notice, { lead: 'Too long.' }, 'This take was ' + short(t.duration) + ', over the 12 minute limit.'),
+      t.criteria && t.criteria.map(function (c) {
+        var ratio = c.earned === null ? 0 : c.earned / c.max;
+        return h(PC.CriterionCard, { key: c.name, name: c.name || 'Untitled', earned: c.earned, max: c.max, assessable: c.earned !== null, quote: c.quote || undefined,
+          explanation: c.earned === null ? "Slides and visuals can't be judged from the audio alone. This criterion is left out of the total." : ratio >= 0.7 ? 'Clear and well supported. Keep this part as it is.' : 'This part is thin. Add one concrete example and say it earlier.' });
+      }),
+      rated.length > 0 && h('div', { className: 'pc-card' }, h('div', { className: 'pc-label' }, 'AI comment · demo text'),
+        h('h3', { className: 'heading-3', style: { marginTop: 8 } }, 'Top strengths'), h('ul', { className: 'plain' }, rated.slice(0, 3).map(function (c) { return h('li', { key: c.name }, c.name + ': ' + c.earned + ' of ' + c.max + '.'); })),
+        h('h3', { className: 'heading-3', style: { marginTop: 16 } }, 'Top fixes'), h('ul', { className: 'plain' }, rated.slice(-3).reverse().map(function (c) { return h('li', { key: c.name }, 'Strengthen ' + c.name.toLowerCase() + '.'); }))),
+      h('div', null, h(PC.Button, { onClick: function () { p.go('practice'); } }, 'Practice again')));
+  }
+
+  function ComparePage(p) {
+    var ts = p.takes, ia = useState(p.pair ? p.pair[0] : ts.length > 1 ? ts[ts.length - 2].id : ''), ib = useState(p.pair ? p.pair[1] : ts.length ? ts[ts.length - 1].id : '');
+    var find = function (id) { return ts.filter(function (x) { return x.id === id; })[0]; };
+    var a = find(ia[0]), b = find(ib[0]);
+    var sel = function (v, set, label) { return h('label', null, h('div', { className: 'pc-label' }, label), h('select', { className: 'pc-input', value: v, onChange: function (e) { set(e.target.value); } }, ts.map(function (t) { return h('option', { key: t.id, value: t.id }, t.name + ' · ' + t.date); }))); };
+    var body = null;
+    if (ts.length < 2) body = h('p', null, 'You need two takes to compare.');
+    else if (!a || !b || a === b) body = h(PC.Notice, { lead: 'Pick two different takes.' }, 'Choose a different take on each side.');
+    else {
+      var ta = total(a), tb = total(b), near = function (x) { return Math.abs(x - 150); }, mid = function (x) { return Math.abs(x - 660); };
+      var names = []; [a, b].forEach(function (t) { (t.criteria || []).forEach(function (c) { if (names.indexOf(c.name) < 0) names.push(c.name); }); });
+      var val = function (t, n) { var c = (t.criteria || []).filter(function (x) { return x.name === n; })[0]; return c && c.earned !== null ? c : null; };
+      body = h('div', { style: { display: 'grid', gap: 24 } },
+        a.rubricName !== b.rubricName && h(PC.Notice, { lead: 'Different rubrics.' }, 'These takes used different rubrics, so criterion scores are not directly comparable.'),
+        h('div', { className: 'pc-card', style: { padding: '4px 16px' } }, h('div', { className: 'pc-label', style: { paddingTop: 12 } }, 'Measured'),
+          h(PC.DeltaRow, { label: 'Score', from: ta ? ta.earned + ' / ' + ta.max : null, to: tb ? tb.earned + ' / ' + tb.max : null, change: ta && tb ? (tb.earned - ta.earned >= 0 ? '+' : '−') + Math.abs(tb.earned - ta.earned) + ' pts · ' + (pct(tb) - pct(ta) >= 0 ? '+' : '−') + Math.abs(pct(tb) - pct(ta)) + '%' : '', better: ta && tb ? pct(tb) >= pct(ta) : false }),
+          h(PC.DeltaRow, { label: 'Duration', from: short(a.duration), to: short(b.duration), change: (b.duration >= a.duration ? '+' : '−') + short(Math.abs(b.duration - a.duration)), better: mid(b.duration) <= mid(a.duration) }),
+          h(PC.DeltaRow, { label: 'Words per minute', from: a.wpm, to: b.wpm, change: Math.abs(b.wpm - a.wpm) + (b.wpm < a.wpm ? ' slower' : ' faster'), better: near(b.wpm) <= near(a.wpm) }),
+          h(PC.DeltaRow, { label: 'Filler rate', from: a.fillers, to: b.fillers, unit: 'per min', change: (b.fillers >= a.fillers ? '+' : '−') + Math.abs(Math.round((b.fillers - a.fillers) * 10) / 10), better: b.fillers <= a.fillers })),
+        names.length > 0 && h(PC.CompareChart, { labels: [a.name, b.name], criteria: names.map(function (n) { var x = val(a, n), y = val(b, n); return { name: n, a: x ? x.earned : null, b: y ? y.earned : null, max: (x || y || { max: 10 }).max }; }) }),
+        h('div', { className: 'pc-card' }, h('div', { className: 'pc-label' }, 'AI comment · demo text'),
+          h('p', { style: { marginTop: 4 } }, 'In the real app this holds three improvements and up to three next priorities, written by the model from both evaluations.')));
+    }
+    return h(Page, { title: 'Compare' }, h(Demo), h('div', { className: 'pc-row', style: { gap: 24 } }, sel(ia[0], ia[1], 'Take A'), sel(ib[0], ib[1], 'Take B')), body);
+  }
+
+  function HistoryPage(p) {
+    var sel = useState([]), picked = sel[0], setPicked = sel[1];
+    var toggle = function (id) { setPicked(picked.indexOf(id) >= 0 ? picked.filter(function (x) { return x !== id; }) : picked.concat(id).slice(-2)); };
+    return h(Page, { title: 'History' }, h(Demo),
+      h('div', { className: 'pc-card', style: { padding: '4px 16px' } }, p.takes.slice().reverse().map(function (t) {
+        var tt = total(t);
+        return h(PC.TakeRow, { key: t.id, name: t.name, date: t.date, rubric: t.rubricName, duration: short(t.duration), score: tt ? tt.earned : null, max: tt ? tt.max : 0, selected: picked.indexOf(t.id) >= 0, onSelect: function () { toggle(t.id); }, onOpen: function (e) { e.preventDefault(); p.go('results', t.id); } });
+      })),
+      h('div', null, h(PC.Button, { variant: 'secondary', disabled: picked.length !== 2, onClick: function () { p.go('compare', null, picked); } }, 'Compare these two')));
+  }
+
+  function App() {
+    var rt = useState('rubric'), route = rt[0], setRoute = rt[1];
+    var ru = useState(RUBRIC0), rubric = ru[0], setRubric = ru[1];
+    var sv = useState(false), saved = sv[0], setSaved = sv[1];
+    var tk = useState(seed), takes = tk[0], setTakes = tk[1];
+    var ti = useState(null), takeId = ti[0], setTakeId = ti[1];
+    var pr = useState(null), pair = pr[0], setPair = pr[1];
+    var th = useState('light'), theme = th[0], setTheme = th[1];
+    useEffect(function () { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
+    var go = function (r, id, pa) { setRoute(r); if (id) setTakeId(id); setPair(pa || null); window.scrollTo(0, 0); };
+    var pages = ['rubric', 'practice', 'results', 'compare', 'history'];
+    var page = route === 'rubric' ? h(RubricPage, { rubric: rubric, setRubric: setRubric, saved: saved, setSaved: setSaved })
+      : route === 'practice' ? h(PracticePage, { takes: takes, rubric: rubric, addTake: function (t) { setTakes(takes.concat(t)); }, go: go })
+      : route === 'results' ? h(ResultsPage, { takes: takes, takeId: takeId, go: go })
+      : route === 'compare' ? h(ComparePage, { key: (pair || []).join() + takes.length, takes: takes, pair: pair })
+      : h(HistoryPage, { takes: takes, go: go });
+    return h(React.Fragment, null,
+      h('header', { className: 'app-head' }, h('div', null, h('span', { className: 'heading-2' }, 'Presentation Coach'),
+        h('nav', { 'aria-label': 'Main' }, pages.map(function (r) { return h('button', { key: r, 'aria-current': r === route ? 'page' : undefined, onClick: function () { go(r, r === 'results' ? takeId : null); } }, r[0].toUpperCase() + r.slice(1)); }),
+          h('button', { onClick: function () { setTheme(theme === 'light' ? 'dark' : 'light'); } }, theme === 'light' ? 'Dark' : 'Light')))),
+      h('main', null, page));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>
+</body>
+</html>

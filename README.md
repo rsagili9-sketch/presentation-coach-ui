@@ -12,3 +12,7 @@ Components: Button, Notice, SessionTimer, RubricRow, CriterionCard, Metric, Delt
 Look: warm off-white page, deep ink text, one coral accent, serif headings (Newsreader) over Source Sans 3. Borders, not shadows.
 
 Run `npm install && npm test` for a server-render smoke test.
+
+## Live demo
+
+`index.html` is a clickable prototype of all five screens (Rubric, Practice, Results, Compare, History) built from these components. Scoring, transcripts and feedback are simulated in the browser; nothing is recorded or uploaded. Open it with any static server, or on GitHub Pages.
