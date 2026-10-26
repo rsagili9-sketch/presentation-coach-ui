@@ -1,0 +1,28 @@
+<!-- Cover of the Presentation Coach design system -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../components.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+body{margin:0;padding:0}
+.cover{position:relative;width:960px;height:288px;background:var(--surface-100);overflow:hidden}
+.cover svg{position:absolute;left:0;top:0}
+.coral{fill:var(--coral);rx:var(--radius-lg)}
+.ink{fill:var(--ink);rx:var(--radius-lg)}
+.soft{fill:var(--coral-soft);rx:var(--radius-lg)}
+.takea{fill:var(--take-a);rx:var(--radius-lg)}
+.wave{fill:var(--surface-100)}
+.name{position:absolute;left:48px;bottom:32px;width:440px}
+.name h1{font:500 64px/0.95 var(--font-serif);color:var(--ink);letter-spacing:-0.01em}
+.name p{margin-top:12px;font:400 14px/20px var(--font-sans);color:var(--ink-muted)}
+</style></head><body><div class="cover" data-theme-root>
+<svg width="960" height="288" viewBox="0 0 960 288" aria-hidden="true">
+<!-- blocks: coral 312x216 (13x9 space-6 steps), ink 144x144, take-a 144x120, coral-soft 312x48; radius-lg
+     arrangement: coral slab left, ink and take-a stacked flush to the right edge, soft strip under the slab
+     pattern: waveform of pills (one voice, one take) cut from the coral in surface-100, 12 marks at 24 pitch
+     steps space-6; pill rx = half the 8px width -->
+<rect class="coral" x="480" y="0" width="312" height="216"/>
+<rect class="ink" x="816" y="0" width="144" height="144"/>
+<rect class="takea" x="816" y="168" width="144" height="120"/>
+<rect class="soft" x="480" y="240" width="312" height="48"/>
+<rect class="wave" x="504" y="84" width="8" height="48" rx="4"/><rect class="wave" x="528" y="60" width="8" height="96" rx="4"/><rect class="wave" x="552" y="72" width="8" height="72" rx="4"/><rect class="wave" x="576" y="36" width="8" height="144" rx="4"/><rect class="wave" x="600" y="48" width="8" height="120" rx="4"/><rect class="wave" x="624" y="24" width="8" height="168" rx="4"/><rect class="wave" x="648" y="60" width="8" height="96" rx="4"/><rect class="wave" x="672" y="36" width="8" height="144" rx="4"/><rect class="wave" x="696" y="72" width="8" height="72" rx="4"/><rect class="wave" x="720" y="48" width="8" height="120" rx="4"/><rect class="wave" x="744" y="84" width="8" height="48" rx="4"/><rect class="wave" x="768" y="72" width="8" height="72" rx="4"/>
+</svg>
+<div class="name"><h1>Presentation Coach</h1><p>Rehearse the pitch, read the take, do it again.</p></div>
+</div></body></html>

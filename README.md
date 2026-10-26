@@ -16,3 +16,11 @@ Run `npm install && npm test` for a server-render smoke test.
 ## Live demo
 
 `index.html` is a clickable prototype of all five screens (Rubric, Practice, Results, Compare, History) built from these components. Scoring, transcripts and feedback are simulated in the browser; nothing is recorded or uploaded. Open it with any static server, or on GitHub Pages.
+
+## Docs
+
+- [Brand book](docs/brand-book.md): voice, color, type and spacing rules
+- [Screens](docs/screens.md): how each page uses the components
+- [Tokens](docs/tokens.json) and [component notes](docs/components/)
+- [Cover](docs/cover.html)
+- [What is left to build](docs/next-steps.md)
